@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: "Name of an existing SSH Keypair to access the instance"
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow traffic to Geode cluster
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: all
+          FromPort: 10334
+          ToPort: 10334
+          CidrIp: 0.0.0.0/0
+  LocatorInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: !Ref LatestAmiId
+      KeyName: !Ref KeyName
+      Tags:
+      - Key: "Name"
+        Value: "SmallLocator1"
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo amazon-linux-extras install java-openjdk11 -y
+          wget https://dlcdn.apache.org/geode/1.15.1/apache-geode-1.15.1.tgz
+          tar -zxvf apache-geode-1.15.1.tgz
+          cd apache-geode-1.15.1
+          mkdir locator
+          echo "mcast-port=0" >> locator/gf.properties
+          echo "log-level=config" >> locator/gf.properties
+          echo "locators=localhost[10334]" >> locator/gf.properties
+          chown -R ec2-user:ec2-user /apache-geode-1.15.1
+          echo "export PATH=$PATH:/apache-geode-1.15.1/bin/" >> /etc/bashrc      
+          su - ec2-user -c '/apache-geode-1.15.1/bin/gfsh start locator --name=locator1 --dir=locator --properties-file=/apache-geode-1.15.1/locator/gf.properties'
+  ServerInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: !Ref LatestAmiId
+      KeyName: !Ref KeyName
+      Tags:
+      - Key: "Name"
+        Value: "SmallCache-server1"
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo amazon-linux-extras install java-openjdk11 -y
+          wget https://dlcdn.apache.org/geode/1.15.1/apache-geode-1.15.1.tgz
+          tar -zxvf apache-geode-1.15.1.tgz
+          cd apache-geode-1.15.1
+          mkdir server1
+          echo "mcast-port=0" >> server1/gf.properties
+          echo "log-level=config" >> server1/gf.properties
+          echo "locators=${LocatorInstance.PrivateIp}[10334]" >> server1/gf.properties 
+          chown -R ec2-user:ec2-user /apache-geode-1.15.1
+          echo "export PATH=$PATH:/apache-geode-1.15.1/bin/" >> /etc/bashrc
+          su - ec2-user -c '/apache-geode-1.15.1/bin/gfsh start server --name=server1 --dir=server1 --properties-file=/apache-geode-1.15.1/server1/gf.properties'
+    DependsOn:
+      - LocatorInstance
+  ServerInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: !Ref LatestAmiId
+      KeyName: !Ref KeyName
+      Tags:
+      - Key: "Name"
+        Value: "SmallCache-server2"
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo amazon-linux-extras install java-openjdk11 -y
+          wget https://dlcdn.apache.org/geode/1.15.1/apache-geode-1.15.1.tgz
+          tar -zxvf apache-geode-1.15.1.tgz
+          cd apache-geode-1.15.1
+          mkdir server2
+          echo "mcast-port=0" >> server2/gf.properties
+          echo "log-level=config" >> server2/gf.properties
+          echo "locators=${LocatorInstance.PrivateIp}[10334]" >> server2/gf.properties
+          chown -R ec2-user:ec2-user /apache-geode-1.15.1
+          echo "export PATH=$PATH:/apache-geode-1.15.1/bin/" >> /etc/bashrc
+          su - ec2-user -c '/apache-geode-1.15.1/bin/gfsh start server --name=server2 --dir=server2 --properties-file=/apache-geode-1.15.1/server2/gf.properties'
+    DependsOn:
+      - LocatorInstance
