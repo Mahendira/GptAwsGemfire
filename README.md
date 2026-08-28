@@ -7,7 +7,7 @@
 [![OpenAI](https://img.shields.io/badge/OpenAI-LLM%20Assistant-412991?logo=openai&logoColor=white)](https://platform.openai.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**GptAwsGemfire** is an experimental **AIOps / Smart Subscription** platform that combines **OpenAI-powered natural-language interaction**, **AWS infrastructure automation**, **Apache Geode/GemFire cluster provisioning**, and **resource-rightsizing experiments**.
+**SmartCacheOps** is an experimental **AIOps / Smart Subscription** platform that combines **OpenAI-powered natural-language interaction**, **AWS infrastructure automation**, **Apache Geode/GemFire cluster provisioning**, and **resource-rightsizing experiments**.
 
 The project demonstrates how a conversational interface can trigger infrastructure operations such as provisioning small or large Geode clusters, monitoring EC2 resources, terminating underutilized instances, estimating cost savings, and experimenting with reinforcement-learning-inspired decision logic.
 
